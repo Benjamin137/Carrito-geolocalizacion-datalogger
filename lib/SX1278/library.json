@@ -1,0 +1,7 @@
+{
+  "name": "SX1278",
+  "version": "1.0.0",
+  "description": "Controlador LoRa de bajo nivel para modulos SX1278",
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}
