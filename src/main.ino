@@ -319,11 +319,27 @@ void logStatus()
     if (!rtcAvailable || !sdAvailable)
         return;
 
+    // bool sensorUpdated = ahtbmpAvailable && ahtbmp.update();
     String line = timestamp();
     line += ",carrito=";
     line += carritoAvailable ? "listo" : "error";
     line += ",modo=";
     line += modeName();
+    // line += ",temperatura=";
+    // if (sensorUpdated && ahtbmp.hasAHT())
+    //     line += String(ahtbmp.getTemperature(), 2);
+    // else
+        // line += "na";
+    // line += ",humedad=";
+    // if (sensorUpdated && ahtbmp.hasAHT())
+        // line += String(ahtbmp.getHumidity(), 2);
+    // else
+        // line += "na";
+    // line += ",presion_hpa=";
+    // if (sensorUpdated && ahtbmp.hasBMP())
+        // line += String(ahtbmp.getPressureHpa(), 2);
+    // else
+        // line += "na";
     sd.appendLine(ACTION_LOG, line);
 }
 
