@@ -23,9 +23,9 @@
 class SDModule : public SDFS {
 public:
   // Pines por defecto = VSPI estándar del ESP32:
-  //   CS = 5, SCK = 18, MISO = 19, MOSI = 23
+  //   CS = 5, SCK = 19, MISO = 18, MOSI = 23
   // frequency: velocidad SPI en Hz (4 MHz es seguro; puedes subir a 20000000).
-  SDModule(uint8_t csPin = 5, int8_t sckPin = 18, int8_t misoPin = 19,
+  SDModule(uint8_t csPin = 5, int8_t sckPin = 19, int8_t misoPin = 18,
            int8_t mosiPin = 23, uint32_t frequency = 4000000)
     : SDFS(FSImplPtr(new VFSImpl())),
       _cs(csPin), _sck(sckPin), _miso(misoPin), _mosi(mosiPin),

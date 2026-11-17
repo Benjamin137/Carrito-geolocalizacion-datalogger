@@ -18,7 +18,7 @@ const uint8_t HCSR04_ECHO_PIN = 35;
 const float DISTANCIA_MINIMA_CM = 20.0f;
 const long SX1278_FREQUENCY = 433000000L;
 const uint8_t SX1278_CS_PIN = 17;
-const uint8_t SX1278_RESET_PIN = 16;
+const int8_t SX1278_RESET_PIN = -1;
 const int8_t SX1278_DIO0_PIN = 2;
 
 OLEDI2C oled(0x3C, 128, 64, 2, SDA_PIN, SCL_PIN);
@@ -27,12 +27,12 @@ SDModule sd;
 // AHTBMP280Sensor ahtbmp(0x38, 0x76, SDA_PIN, SCL_PIN);
 TCRT5000Sensor tcrt5000(TCRT5000_PINS, 1, true);
 HCSR04Sensor hcsr04(HCSR04_TRIGGER_PIN, HCSR04_ECHO_PIN);
-SX1278 sx1278(SX1278_CS_PIN, SX1278_RESET_PIN, SX1278_DIO0_PIN);
+SX1278 sx1278;
 
 // Llanta trasera izquierda
 // BOUT1: rojo; BOUT2: negro
 
-// Llanta trasera derecha
+// Llanta delantera izquierda
 // AOUT1: rojo; AOUT2: negro
 
 DRV8833 ladoIzquierdo(
@@ -70,7 +70,7 @@ bool buscandoLineaDespuesDeObstaculo = false;
 bool avanceManualActivo = false;
 bool carritoEnMovimiento = false;
 // Activar para probar las instrucciones escribiendolas en el monitor serial.
-bool modoPruebaTerminal = true;
+bool modoPruebaTerminal = false;
 
 unsigned long lastDisplayUpdate = 0;
 unsigned long lastLogUpdate = 0;
@@ -119,7 +119,18 @@ void setup()
     tcrt5000Available = tcrt5000.begin();
     hcsr04.begin();
     hcsr04Available = true;
-    sx1278Available = sx1278.begin(SX1278_FREQUENCY);
+    sx1278Available = sx1278.begin(
+        SX1278_FREQUENCY,
+        SX1278_CS_PIN,
+        SX1278_RESET_PIN,
+        SX1278_DIO0_PIN,
+        19,
+        18,
+        23);
+    Serial.printf("SX1278: inicializacion %s (CS=%u, RESET=%d, DIO0=%d, frecuencia=%ld Hz)\n",
+                  sx1278Available ? "correcta" : "fallida",
+                  SX1278_CS_PIN, SX1278_RESET_PIN, SX1278_DIO0_PIN,
+                  SX1278_FREQUENCY);
     message = "";
 
     if (!oledAvailable)
@@ -188,7 +199,8 @@ void loop()
         {
             if (!obstacleDetected)
             {
-                carrito.avanzar(180);
+                carrito.avanzar(180
+                );
                 avanceManualActivo = true;
                 carritoEnMovimiento = true;
             }
@@ -301,6 +313,8 @@ void pruebaMotores()
     carrito.girarIzquierda(200);
     delay(5000);
     carrito.detener();
+    modoActual = MODO_MANUAL;
+    Serial.println("SX1278: receptor activo, esperando paquetes...");
 }
 
 // ---------------------------------------------------------------------------
@@ -426,6 +440,8 @@ String getInstruction()
         return "";
     }
 
+    Serial.printf("SX1278: paquete recibido, longitud=%d, RSSI=%d dBm, SNR=%.1f dB\n",
+                  length, sx1278.packetRssi(), sx1278.packetSnr());
     payload[length] = '\0';
     JsonDocument document;
     DeserializationError error = deserializeJson(document, payload, length);
@@ -434,6 +450,7 @@ String getInstruction()
         Serial.printf("SX1278: JSON invalido: %s\n", error.c_str());
         return "";
     }
+    Serial.printf("SX1278: JSON deserializado: %s\n", document.as<String>().c_str());
 
     JsonVariant instruction = document["goto"];
     if (instruction.isNull())
@@ -441,6 +458,7 @@ String getInstruction()
         Serial.println("SX1278: el JSON no contiene la propiedad goto");
         return "";
     }
+    Serial.printf("SX1278: instrucción recibida: %s\n", instruction.as<String>().c_str());
 
     String command = instruction.as<String>();
     if (command != "W" && command != "A" && command != "S" &&
